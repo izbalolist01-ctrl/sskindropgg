@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎮 Игровой портал 2026 – Final Fix</title>
+    <title>🎮 Игровой портал 2026 – Final</title>
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
         body{font-family:system-ui,sans-serif;background:linear-gradient(135deg,#0f0f1a 0%,#1a1a2e 50%,#16213e 100%);min-height:100vh;display:flex;flex-direction:column;align-items:center;color:#fff}
@@ -80,9 +80,10 @@
         .shop-section{display:none;background:rgba(255,255,255,0.06);border-radius:16px;padding:25px;border:1px solid rgba(255,255,255,0.1);text-align:center;max-width:500px;margin:0 auto}
         .coins-big{font-size:2.2rem;font-weight:bold;background:linear-gradient(to right,#f59e0b,#fbbf24);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin:15px 0}
         footer{background:rgba(0,0,0,0.4);text-align:center;padding:15px;width:100%;color:#94a3b8;font-size:0.8rem;margin-top:auto}
+        #online-counter{display:inline-flex;align-items:center;gap:6px;background:rgba(0,0,0,0.3);padding:6px 14px;border-radius:20px;font-size:0.8rem}
+        #online-counter .dot{width:8px;height:8px;background:#22c55e;border-radius:50%;display:inline-block}
         #nicknameSection{display:flex;align-items:center;gap:8px}
         #nicknameInput{background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:20px;padding:5px 12px;color:#fff;font-size:0.8rem;outline:none;width:120px}
-        #playerCount{color:#22c55e;font-weight:bold}
     </style>
 </head>
 <body>
@@ -93,7 +94,7 @@
     <button onclick="showPage('shop')">🛒 Магазин</button>
     <button id="supportBadge" onclick="openChat()" style="background:rgba(59,130,246,0.2);color:#60a5fa">💬 Поддержка</button>
     <span class="nav-coins">💰 <span id="navCoins">1000</span></span>
-    <span id="nicknameSection"><input id="nicknameInput" placeholder="Ник" maxlength="16"><span id="playerCount">🟢 1</span></span>
+    <span id="nicknameSection"><input id="nicknameInput" placeholder="Ник" maxlength="16"></span>
 </nav>
 <div id="mainContent">
     <div id="gamesPage" class="game-container">
@@ -120,12 +121,7 @@
         <div class="wheel-container"><div class="wheel-arrow">▼</div><canvas id="wheelCanvas" width="320" height="320" class="wheel-canvas"></canvas></div>
         <div id="wheelResult" style="margin-top:15px;font-size:20px;font-weight:bold"></div>
     </div>
-    <div id="shopPage" class="shop-section">
-        <h2>🛒 Магазин</h2>
-        <div class="coins-big">💰 <span id="shopCoins">1000</span></div>
-        <button class="btn btn-primary" onclick="addCoins(10)">🪙 +10 монет</button>
-        <div style="margin-top:20px"><h3>🎁 Промокод</h3><input type="text" id="promoInput" placeholder="Промокод"><button class="btn btn-success" onclick="applyPromo()">Применить</button><p id="promoMessage" style="margin-top:8px"></p></div>
-    </div>
+    <div id="shopPage" class="shop-section"><h2>🛒 Магазин</h2><div class="coins-big">💰 <span id="shopCoins">1000</span></div><button class="btn btn-primary" onclick="addCoins(10)">🪙 +10 монет</button><div style="margin-top:20px"><h3>🎁 Промокод</h3><input type="text" id="promoInput" placeholder="Промокод"><button class="btn btn-success" onclick="applyPromo()">Применить</button><p id="promoMessage" style="margin-top:8px"></p></div></div>
 </div>
 <div id="adminOverlay"></div>
 <div id="adminPanel" style="display:none">
@@ -174,8 +170,10 @@
 </div>
 <div id="popupOverlay"></div>
 <div class="result-popup" id="resultPopup"><h2 id="resultTitle"></h2><p id="resultMessage" style="color:#cbd5e1;margin-bottom:15px"></p><button class="btn btn-primary" onclick="closeResult()">OK</button></div>
-<footer><p>© 2026 Игровой портал</p></footer>
+<footer><p>© 2026 Игровой портал <span id="online-counter"><span class="dot"></span> Онлайн: <span id="online-count">...</span></span></p></footer>
+
 <script>
+// ==================== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ====================
 let coins = parseInt(localStorage.getItem('portalCoins')) || 1000;
 let cheatMode = false;
 let jarvisUnlocked = localStorage.getItem('jarvisUnlocked') === 'true';
@@ -204,13 +202,6 @@ function addGameRecord(userId, game, bet, result, amount){
     if(gameHistory[userId].length > 50) gameHistory[userId].shift();
     localStorage.setItem('gameHistory', JSON.stringify(gameHistory));
 }
-function updateOnlineCount() {
-    const now = Date.now();let sessions = JSON.parse(localStorage.getItem('onlineSessions')) || {};
-    for(const key in sessions){if(now - sessions[key] > 30000) delete sessions[key];}
-    sessions[myUserId] = now;localStorage.setItem('onlineSessions', JSON.stringify(sessions));
-    document.getElementById('playerCount').textContent = '🟢 ' + Object.keys(sessions).length;
-}
-setInterval(updateOnlineCount, 5000);updateOnlineCount();
 const nicknameInput = document.getElementById('nicknameInput');nicknameInput.value = nickname;
 nicknameInput.addEventListener('input', () => { nickname = nicknameInput.value || 'Игрок';localStorage.setItem('nickname', nickname);playerStats[myUserId].nick = nickname;localStorage.setItem('playerStats', JSON.stringify(playerStats));});
 function isPlayerBanned(){ return bannedPlayers[myUserId] === true; }
@@ -246,6 +237,7 @@ function leaveGame(){
 function applyPromo(){const c=document.getElementById('promoInput').value.trim().toUpperCase(),m=document.getElementById('promoMessage');if(promoCodes[c]){addCoins(promoCodes[c]);m.textContent='✅ +'+promoCodes[c];m.style.color='#22c55e';}else{const s={'WELCOME':500,'CRASH':1000};if(s[c]){addCoins(s[c]);m.textContent='✅ +'+s[c];m.style.color='#22c55e';}else{m.textContent='❌';m.style.color='#ef4444';}}}
 function updatePlayerStat(win, amount){if(!playerStats[myUserId]) playerStats[myUserId] = {nick:nickname, wins:0, losses:0, coinsWon:0, coinsLost:0};if(win){playerStats[myUserId].wins++; playerStats[myUserId].coinsWon += amount;}else{playerStats[myUserId].losses++; playerStats[myUserId].coinsLost += amount;}localStorage.setItem('playerStats', JSON.stringify(playerStats));}
 
+// ==================== АДМИН ПАНЕЛЬ ====================
 function openAdmin(){
     document.getElementById('adminOverlay').style.display='block';
     document.getElementById('adminPanel').style.display='flex';
@@ -335,11 +327,11 @@ function adminCommand(cmd){
     else if(c==='/admins'){switchAdminTab('admins');}
     else if(c==='/players'){switchAdminTab('players');}
     else if(c==='/history'&&parts[1]){switchAdminTab('history');renderAdminHistory(parts[1]);}
-    else { adminLog('❌ неизвестная команда'); }
 }
 function updateCheatUI(){const s=document.getElementById('cheatStatus');if(cheatMode){s.textContent='ВКЛ';s.className='cheat-status cheat-on';}else{s.textContent='ВЫКЛ';s.className='cheat-status cheat-off';}}
 document.getElementById('adminInput').addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();adminCommand(this.value);this.value='';}});
 
+// ==================== ЧАТ ====================
 function getChatUsers(){const users={};chatMessages.forEach(m=>{if(!m.admin&&m.userId){if(!users[m.userId]){const stat=playerStats[m.userId]||{nick:'Игрок'};users[m.userId]={nick:stat.nick,lastTime:0,unread:0};}users[m.userId].lastTime=m.time;}});for(const uid in users){const lastRead=chatRead[uid]||0;let unread=0;chatMessages.forEach(m=>{if(!m.admin&&m.userId===uid&&m.time>lastRead)unread++;});users[uid].unread=unread;}return users;}
 function openChat(){document.getElementById('chatOverlay').style.display='block';document.getElementById('chatPanel').style.display='block';renderChat();document.getElementById('chatInput').focus();chatRead['user_'+myUserId] = Date.now();localStorage.setItem('chatRead',JSON.stringify(chatRead));updateNav();}
 function closeChat(){document.getElementById('chatOverlay').style.display='none';document.getElementById('chatPanel').style.display='none';}
@@ -351,6 +343,7 @@ function renderAdminChatMessages(uid){const el=document.getElementById('adminCha
 function sendAdminChat(){if(!selectedChatUser)return;const input=document.getElementById('adminChatInput');const text=input.value.trim();if(!text)return;chatMessages.push({nick:'Поддержка',text:text,admin:true,time:Date.now(),userId:selectedChatUser});if(chatMessages.length>100)chatMessages.shift();localStorage.setItem('chatMessages',JSON.stringify(chatMessages));renderAdminChatMessages(selectedChatUser);renderAdminChatUsers();input.value='';updateNav();}
 document.getElementById('adminChatInput').addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();sendAdminChat();}});
 
+// ==================== MINES ====================
 const GS=5;let mCount=3,mBet=10,mActive=false,mBoard=[],mRev=[],mFound=0,mTotal=0,mOver=false,mResetting=false;
 const mults={3:[1.07,1.22,1.40,1.62,1.89,2.22,2.63,3.15,3.82,4.70,5.87,7.47,9.71,12.94,17.79,25.41,38.11,60.97,106.69,213.38,533.45,2133.80],6:[1.25,1.66,2.24,3.08,4.31,6.15,8.98,13.47,20.81,33.29,55.48,97.09,180.31,360.62,793.36,1983.40,5950.20,23800.80,166605.60],9:[1.48,2.36,3.87,6.54,11.44,20.80,39.52,79.04,167.96,383.90,959.75,2687.30,8733.72,34934.88,192141.84,1921418.40],12:[1.82,3.64,7.61,16.74,39.06,97.65,265.05,795.15,2703.51,10814.04,54070.20,378491.40,4920388.20],15:[2.37,6.32,18.17,57.10,199.85,799.40,3797.15,22782.90,193654.65,3098474.40],24:[23.75]};
 function updateMines(){mCount=parseInt(document.getElementById('minesCount').value);mBet=parseInt(document.getElementById('minesBet').value)||10;if(mBet<1)mBet=1;mTotal=GS*GS-mCount;document.getElementById('minesInfo').innerHTML='Макс: <span style="color:#22c55e">'+mults[mCount].slice(-1)[0].toFixed(2)+'x</span>';}
@@ -361,6 +354,7 @@ function revealMines(r,c){if(!mActive||mOver||mRev[r][c]||mResetting)return;if(i
 function updateMinesCashout(){if(mFound===0){document.getElementById('minesCurMult').textContent='1.00x';document.getElementById('minesCashAmt').textContent='0';document.getElementById('minesCashoutBtn').disabled=true;return;}const mult=mults[mCount][mFound-1],val=Math.floor(mBet*mult);document.getElementById('minesCurMult').textContent=mult.toFixed(2)+'x';document.getElementById('minesCashAmt').textContent=val;document.getElementById('minesCashoutBtn').disabled=false;}
 function cashoutMines(){if(!mActive||mOver||mFound===0||mResetting)return;mOver=true;mActive=false;minesLossStreak=0;localStorage.setItem('minesLossStreak',0);const mult=mults[mCount][mFound-1],win=Math.floor(mBet*mult);addCoins(win);updatePlayerStat(true,win);addGameRecord(myUserId,'mines',mBet,'win',win);for(let r=0;r<GS;r++)for(let c=0;c<GS;c++)if(mBoard[r][c]==='coin')mRev[r][c]=true;renderMinesBoard();mResetting=true;setTimeout(()=>{resetMines();},1500);document.getElementById('minesCashout').style.display='none';showResult('💰 Забрано!','+'+win+' ('+mult.toFixed(2)+'x)');}
 
+// ==================== CRASH ====================
 let cActive=false,cBet=0,cCur=1,cInt=null,cCrashed=false,cCashed=false;
 let cCanvas,cCtx,cPoints=[],cPoint=1;let autoStop=false,autoStopVal=2;
 function renderCrashHistory(){const el=document.getElementById('crashHistory');el.innerHTML='';crashHistory.slice(-10).reverse().forEach(h=>{const d=document.createElement('span');d.className='crash-history-item '+(h>1?'win':'lose');d.textContent=h.toFixed(2)+'x';el.appendChild(d);});}
@@ -404,6 +398,7 @@ function crashCashout(){
 }
 function resetCrash(){cActive=false;cCur=1;cPoints=[];cCashed=false;if(cInt)clearInterval(cInt);document.getElementById('crashMultDisplay').textContent='1.00x';document.getElementById('crashMultDisplay').className='crash-mult-display crash-mult-low';document.getElementById('crashBetBtn').disabled=false;document.getElementById('crashCashoutBtn').disabled=true;document.getElementById('crashStatus').textContent='Ожидание ставки...';}
 
+// ==================== WHEEL ====================
 const wheelSegs=[{label:'2x',color:'#ef4444',mult:2},{label:'3x',color:'#8b5cf6',mult:3},{label:'2x',color:'#f59e0b',mult:2},{label:'5x',color:'#22c55e',mult:5},{label:'2x',color:'#ef4444',mult:2},{label:'3x',color:'#8b5cf6',mult:3},{label:'2x',color:'#f59e0b',mult:2},{label:'50x',color:'#fbbf24',mult:50},{label:'2x',color:'#ef4444',mult:2},{label:'3x',color:'#8b5cf6',mult:3},{label:'2x',color:'#f59e0b',mult:2},{label:'5x',color:'#22c55e',mult:5},{label:'2x',color:'#ef4444',mult:2},{label:'3x',color:'#8b5cf6',mult:3},{label:'2x',color:'#f59e0b',mult:2},{label:'5x',color:'#22c55e',mult:5},{label:'2x',color:'#ef4444',mult:2},{label:'3x',color:'#8b5cf6',mult:3},{label:'2x',color:'#f59e0b',mult:2}];
 let wTarget=2,wSpinning=false,wRotation=0;
 function setWheelTarget(t){wTarget=t;document.querySelectorAll('.wheel-choice button').forEach(b=>b.classList.remove('selected'));event.target.classList.add('selected');}
@@ -443,6 +438,12 @@ function spinWheel(){
 function showResult(t,m){document.getElementById('popupOverlay').style.display='block';document.getElementById('resultPopup').style.display='block';document.getElementById('resultTitle').textContent=t;document.getElementById('resultMessage').textContent=m;}
 function closeResult(){document.getElementById('popupOverlay').style.display='none';document.getElementById('resultPopup').style.display='none';updateNav();}
 document.addEventListener('keydown',e=>{if(e.key==='ё'||e.key==='Ё'||e.key==='`'||e.key==='~'){e.preventDefault();openAdmin();}if(e.key==='Escape'){closeAdmin();closeChat();closeResult();}});
+
+// ==================== ИМИТАЦИЯ ОНЛАЙНА ====================
+function updateFakeOnline(){const fake=Math.floor(Math.random()*10)+3;document.getElementById('online-count').textContent=fake;}
+setInterval(updateFakeOnline,30000);
+updateFakeOnline();
+
 updateNav();showPage('games');renderCrashHistory();drawWheelCanvas();
 </script>
 </body>
